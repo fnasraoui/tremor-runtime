@@ -268,7 +268,6 @@ dependencies = [
  "futures",
  "getrandom 0.2.9",
  "hash_hasher",
- "multiversion",
  "num-traits",
  "parquet2",
  "rustc_version 0.4.0",
@@ -1008,27 +1007,6 @@ name = "aws-smithy-http"
 version = "0.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29dcab29afbea7726f5c10c7be0c38666d7eb07db551580b3b26ed7cfb5d1935"
-dependencies = [
- "aws-smithy-types 0.53.1",
- "bytes 1.4.0",
- "bytes-utils",
- "futures-core",
- "http",
- "http-body",
- "hyper",
- "once_cell",
- "percent-encoding",
- "pin-project-lite 0.2.9",
- "pin-utils",
- "tokio",
- "tokio-util 0.7.7",
- "tracing",
-]
-
-[[package]]
-name = "aws-smithy-http"
-version = "0.53.2"
-source = "git+https://github.com/parker-timmerman/smithy-rs.git?branch=v0.53.2#2865b0455f363646976cdcd419baa4701b24e3e8"
 dependencies = [
  "aws-smithy-eventstream 0.53.1",
  "aws-smithy-types 0.53.1",
@@ -1883,7 +1861,7 @@ checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 [[package]]
 name = "columnation"
 version = "0.1.0"
-source = "git+https://github.com/frankmcsherry/columnation#eb8e20c10e748dcbfe6266be8e24e14422d3de0f"
+source = "git+https://github.com/Licenser/columnation?rev=bfd9e2a953768887138e56f10f9be13e27ef175a#bfd9e2a953768887138e56f10f9be13e27ef175a"
 dependencies = [
  "paste",
 ]
@@ -2716,18 +2694,6 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e40a16955681d469ab3da85aaa6b42ff656b3c67b52e1d8d3dd36afe97fd462"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "enum_dispatch"
-version = "0.3.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11f36e95862220b211a6e2aa5eca09b4fa391b13cd52ceb8035a24bf65a79de2"
-dependencies = [
- "once_cell",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -4360,29 +4326,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 
 [[package]]
-name = "multiversion"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "025c962a3dd3cc5e0e520aa9c612201d127dcdf28616974961a649dca64f5373"
-dependencies = [
- "multiversion-macros",
-]
-
-[[package]]
-name = "multiversion-macros"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8a3e2bde382ebf960c1f3e79689fa5941625fe9bf694a1cb64af3e85faff3af"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "mz-cloud-resources"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4399,7 +4345,7 @@ dependencies = [
 [[package]]
 name = "mz-expr"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "aho-corasick 0.7.20",
  "anyhow",
@@ -4447,7 +4393,7 @@ dependencies = [
 [[package]]
 name = "mz-lowertest"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "mz-lowertest-derive",
  "mz-ore",
@@ -4460,7 +4406,7 @@ dependencies = [
 [[package]]
 name = "mz-lowertest-derive"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4471,7 +4417,7 @@ dependencies = [
 [[package]]
 name = "mz-ore"
 version = "0.1.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4496,24 +4442,19 @@ dependencies = [
 [[package]]
 name = "mz-persist-types"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "arrow2",
  "bytes 1.4.0",
- "mz-proto",
  "parquet2",
- "prost 0.11.9",
- "prost-build 0.11.9",
- "protobuf-src",
- "serde",
  "workspace-hack",
 ]
 
 [[package]]
 name = "mz-pgcopy"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "bytes 1.4.0",
  "csv",
@@ -4525,14 +4466,13 @@ dependencies = [
 [[package]]
 name = "mz-pgrepr"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "byteorder",
  "bytes 1.4.0",
  "chrono 0.4.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "dec",
  "mz-ore",
- "mz-pgrepr-consts",
  "mz-repr",
  "once_cell",
  "postgres-types",
@@ -4541,14 +4481,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "mz-pgrepr-consts"
-version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
-
-[[package]]
 name = "mz-postgres-util"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "mz-cloud-resources",
@@ -4575,7 +4510,7 @@ dependencies = [
 [[package]]
 name = "mz-proto"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "globset",
@@ -4595,7 +4530,7 @@ dependencies = [
 [[package]]
 name = "mz-repr"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -4606,7 +4541,6 @@ dependencies = [
  "dec",
  "differential-dataflow",
  "enum-kinds",
- "enum_dispatch",
  "fast-float",
  "hex",
  "itertools",
@@ -4641,20 +4575,16 @@ dependencies = [
 [[package]]
 name = "mz-ssh-util"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
- "mz-ore",
  "openssh",
- "openssh-mux-client",
  "openssl",
  "rand 0.8.5",
- "scopeguard",
  "serde",
  "serde_json",
  "ssh-key",
  "tempfile",
- "tokio",
  "tracing",
  "workspace-hack",
  "zeroize",
@@ -7509,7 +7439,7 @@ dependencies = [
 [[package]]
 name = "timely"
 version = "0.12.0"
-source = "git+https://github.com/TimelyDataflow/timely-dataflow#432ef57fae761f1e4773833b0474b41f1efe7e7c"
+source = "git+https://github.com/Licenser/timely-dataflow?rev=134842aa6e1cce36a1d68bec3d79c1c3781cd11e#134842aa6e1cce36a1d68bec3d79c1c3781cd11e"
 dependencies = [
  "abomonation",
  "abomonation_derive",
@@ -7527,12 +7457,12 @@ dependencies = [
 [[package]]
 name = "timely_bytes"
 version = "0.12.0"
-source = "git+https://github.com/TimelyDataflow/timely-dataflow#432ef57fae761f1e4773833b0474b41f1efe7e7c"
+source = "git+https://github.com/Licenser/timely-dataflow?rev=134842aa6e1cce36a1d68bec3d79c1c3781cd11e#134842aa6e1cce36a1d68bec3d79c1c3781cd11e"
 
 [[package]]
 name = "timely_communication"
 version = "0.12.0"
-source = "git+https://github.com/TimelyDataflow/timely-dataflow#432ef57fae761f1e4773833b0474b41f1efe7e7c"
+source = "git+https://github.com/Licenser/timely-dataflow?rev=134842aa6e1cce36a1d68bec3d79c1c3781cd11e#134842aa6e1cce36a1d68bec3d79c1c3781cd11e"
 dependencies = [
  "abomonation",
  "abomonation_derive",
@@ -7548,7 +7478,7 @@ dependencies = [
 [[package]]
 name = "timely_container"
 version = "0.12.0"
-source = "git+https://github.com/TimelyDataflow/timely-dataflow#432ef57fae761f1e4773833b0474b41f1efe7e7c"
+source = "git+https://github.com/Licenser/timely-dataflow?rev=134842aa6e1cce36a1d68bec3d79c1c3781cd11e#134842aa6e1cce36a1d68bec3d79c1c3781cd11e"
 dependencies = [
  "columnation",
  "serde",
@@ -7557,7 +7487,7 @@ dependencies = [
 [[package]]
 name = "timely_logging"
 version = "0.12.0"
-source = "git+https://github.com/TimelyDataflow/timely-dataflow#432ef57fae761f1e4773833b0474b41f1efe7e7c"
+source = "git+https://github.com/Licenser/timely-dataflow?rev=134842aa6e1cce36a1d68bec3d79c1c3781cd11e#134842aa6e1cce36a1d68bec3d79c1c3781cd11e"
 
 [[package]]
 name = "tiny-keccak"
@@ -8259,6 +8189,7 @@ dependencies = [
  "mz-postgres-util",
  "mz-repr",
  "num_cpus",
+ "once_cell",
  "pin-project-lite 0.2.9",
  "port_scanner",
  "postgres-protocol",
@@ -8278,6 +8209,7 @@ dependencies = [
  "rustls-pemfile",
  "ryu",
  "serde",
+ "serde_json",
  "serde_yaml 0.9.21",
  "serenity",
  "serial_test",
@@ -9176,14 +9108,14 @@ dependencies = [
 [[package]]
 name = "workspace-hack"
 version = "0.0.0"
-source = "git+https://github.com/MaterializeInc/materialize#896f6b09127d27218b2e5994eda27e1f52273391"
+source = "git+https://github.com/MaterializeInc/materialize?rev=ba21055fdee530cdc9270ffe8b37bcc62ff0789d#ba21055fdee530cdc9270ffe8b37bcc62ff0789d"
 dependencies = [
  "anyhow",
  "aws-credential-types 0.53.0",
  "aws-sdk-sts 0.23.0",
  "aws-sig-auth 0.53.0",
  "aws-sigv4 0.53.2",
- "aws-smithy-http 0.53.2",
+ "aws-smithy-http 0.53.1",
  "axum",
  "base64 0.13.1",
  "bstr 0.2.17",
@@ -9211,6 +9143,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "futures-util",
+ "getrandom 0.2.9",
  "globset",
  "hashbrown 0.12.3 (git+https://github.com/MaterializeInc/hashbrown.git)",
  "hyper",
@@ -9259,6 +9192,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.6",
  "smallvec",
+ "socket2 0.4.9",
  "syn 1.0.109",
  "textwrap 0.15.2",
  "tikv-jemalloc-sys",

@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::str::FromStr;
 // Copyright 2021, The Tremor Team
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,29 +16,9 @@ use std::time::Duration;
 use crate::connectors::prelude::*;
 use tremor_common::time::nanotime;
 
-// use anyhow::anyhow;
-// use futures::{Stream, StreamExt};
-// use mz_expr::MirScalarExpr;
-// use mz_postgres_util::{desc::PostgresTableDesc, Config};
-// use mz_repr::{Datum, DatumVec, Row};
-// use once_cell::sync::Lazy;
-// use postgres_protocol::message::backend::{
-//     LogicalReplicationMessage, ReplicationMessage, XLogDataBody,
-// };
-// use std::{
-//     collections::BTreeMap,
-//     env,
-//     str::FromStr,
-//     sync::{
-//         atomic::{AtomicU64, Ordering},
-//         Arc,
-//     },
-//     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
-// };
-// use simd_json::ValueAccess;
-// use tokio_postgres::{replication::LogicalReplicationStream, types::PgLsn, Client, SimpleQueryMessage, GenericClient};
-// mod serializer;
-// use serializer::SerializedXLogDataBody;
+use mz_postgres_util::{Config as MzConfig};
+use tokio_postgres::config::Config as TokioPgConfig;
+mod postgres_replication;
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
@@ -81,50 +62,56 @@ impl ConnectorBuilder for Builder {
             port: Option::from(config.port),
             path: vec![config.interval.to_string()],
         };
-        let _database = config.dbname;
-        let _username = config.username;
-        let _password = config.password;
+        let database = config.dbname;
+        let username = config.username;
+        let password = config.password;
+        let pg_config= TokioPgConfig::from_str(&format!("host={} port=5432 user={} password={} dbname={}", origin_uri.host, username, password, database))?;
+        let connection_config = MzConfig::new(pg_config, mz_postgres_util::TunnelConfig::Direct)?;
 
-        Ok(Box::new(Metronome {
+        Ok(Box::new(PostgresReplication {
             interval: config.interval,
+            connection_config,
             origin_uri,
         }))
     }
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Metronome {
+pub(crate) struct PostgresReplication {
     interval: u64,
+    connection_config : MzConfig,
     origin_uri: EventOriginUri,
 }
 
 #[async_trait::async_trait()]
-impl Connector for Metronome {
-    fn codec_requirements(&self) -> CodecReq {
-        CodecReq::Structured
-    }
-
+impl Connector for PostgresReplication {
     async fn create_source(
         &mut self,
         ctx: SourceContext,
         builder: SourceManagerBuilder,
     ) -> Result<Option<SourceAddr>> {
-        let source = MetronomeSource::new(self.interval, self.origin_uri.clone());
+        let source = PostgresReplicationSource::new(self.interval, self.connection_config.clone(), self.origin_uri.clone());
         Ok(Some(builder.spawn(source, ctx)))
+    }
+
+    fn codec_requirements(&self) -> CodecReq {
+        CodecReq::Structured
     }
 }
 
-struct MetronomeSource {
+struct PostgresReplicationSource {
     interval_ns: u64,
     next: u64,
+    connection_config : MzConfig,
     origin_uri: EventOriginUri,
     id: u64,
 }
 
-impl MetronomeSource {
-    fn new(interval_ns: u64, origin_uri: EventOriginUri) -> Self {
+impl PostgresReplicationSource {
+    fn new(interval_ns: u64, connection_config: MzConfig, origin_uri: EventOriginUri) -> Self {
         Self {
             interval_ns,
+            connection_config,
             next: nanotime() + interval_ns, // dummy placeholer
             origin_uri,
             id: 0,
@@ -133,9 +120,11 @@ impl MetronomeSource {
 }
 
 #[async_trait::async_trait()]
-impl Source for MetronomeSource {
+impl Source for PostgresReplicationSource {
     async fn connect(&mut self, _ctx: &SourceContext, _attempt: &Attempt) -> Result<bool> {
         self.next = nanotime() + self.interval_ns;
+        let _client =
+            self.connection_config.connect("postgres_connection").await?;
         Ok(true)
     }
 
@@ -149,22 +138,8 @@ impl Source for MetronomeSource {
         *pull_id = self.id;
         self.id += 1;
 
-////////////////
-//         let pg_config = tokio_postgres::Config::from_str("host=127.0.0.1 port=5433 user=postgres password=password dbname=testdb")?;
-//
-//         let tunnel_config = mz_postgres_util::TunnelConfig::Direct;
-//         let connection_config = tokio_postgres::Config::new(pg_config, tunnel_config)?;
-//         let slot = "gamess";
-//         let publication = "gamespub";
-//         let source_id = "source_id";
-//
-//         println!("======== BEGIN SNAPSHOT ==========");
-//         let publication_tables =
-//             mz_postgres_util::publication_info(&connection_config, publication, None).await?;
-//         // Validate publication tables against the state snapshot
-//         dbg!(&publication_tables);
+        postgres_replication::replication(self.connection_config.clone()).await?;
 
-////////////////////
         let data = literal!({
             "connector": "psql-repl",
             "ingest_ns": now,
@@ -177,7 +152,6 @@ impl Source for MetronomeSource {
             port: None,
         })
     }
-
     fn is_transactional(&self) -> bool {
         false
     }
