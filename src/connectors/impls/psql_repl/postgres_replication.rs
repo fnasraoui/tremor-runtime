@@ -18,10 +18,7 @@ use std::{
     },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
-// use serde::Deserialize;
-// use serde_json::Value;
-// use simd_json::ValueAccess;
-// use tokio_postgres::{replication::LogicalReplicationStream, types::PgLsn, Client, SimpleQueryMessage, GenericClient};
+
 use tokio_postgres::{replication::LogicalReplicationStream, types::PgLsn, Client, SimpleQueryMessage};
 mod serializer;
 use serializer::SerializedXLogDataBody;
@@ -152,12 +149,12 @@ async fn produce_replication<'a>(
                             //     println!("======== END OF the DELETE MESSAGE JSON  ==========");
                             // }
                             //
-                            LogicalReplicationMessage::Relation(_relation) => {
+                            // LogicalReplicationMessage::Relation(_relation) => {
                             //     println!("======== RELATION ==========");
                             //     let serialized_xlog = serde_json::to_string_pretty(&SerializedXLogDataBody(xlog_data)).unwrap();
                             //     println!("{}", serialized_xlog);
                             //     println!("======== END OF the RELATION MESSAGE JSON  ==========");
-                            }
+                            // }
                             _ => yield xlog_data,
                         }
                     }
@@ -364,6 +361,11 @@ struct SourceTable {
     casts: Vec<MirScalarExpr>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct PublicationTables {
+    publication_tables: Vec<PostgresTableDesc>,
+}
+
 pub(crate) async fn replication(connection_config:MzConfig, tx:Sender<tremor_value::Value<'static>>) -> Result<(), anyhow::Error> {
     let publication = "gamespub";
     let publication_tables =
@@ -372,10 +374,18 @@ pub(crate) async fn replication(connection_config:MzConfig, tx:Sender<tremor_val
     let source_id = "source_id";
     let mut _replication_lsn = PgLsn::from(0);
 
-    println!("======== BEGIN SNAPSHOT ==========");
+    // println!("======== BEGIN SNAPSHOT ==========");
 
     // Validate publication tables against the state snapshot
-    dbg!(&publication_tables);
+    // dbg!(&publication_tables);
+    let mut postgres_tables = Vec::new();
+    for postgres_table_desc in &publication_tables {
+        postgres_tables.push(postgres_table_desc.clone());
+    }
+    let publication_tables_json = serde_json::to_string(&PublicationTables{publication_tables: postgres_tables}).unwrap();
+    let json_obj : tremor_value::Value = serde_json::from_str(&publication_tables_json)?;
+    tx.send(json_obj.into_static()).await?;
+
     let source_tables: BTreeMap<u32, SourceTable> = publication_tables
         .into_iter()
         .map(|t| {
@@ -402,14 +412,14 @@ pub(crate) async fn replication(connection_config:MzConfig, tx:Sender<tremor_val
         ))
         .await?;
 
-    dbg!(&res);
+    // dbg!(&res);
     let slot_lsn = parse_single_row(&res, "confirmed_flush_lsn");
     client
         .simple_query("BEGIN READ ONLY ISOLATION LEVEL REPEATABLE READ;")
         .await?;
     let (slot_lsn, snapshot_lsn, temp_slot): (PgLsn, PgLsn, _) = match slot_lsn {
         Ok(slot_lsn) => {
-            dbg!(&slot_lsn);
+            // dbg!(&slot_lsn);
             // The main slot already exists which means we can't use it for the snapshot. So
             // we'll create a temporary replication slot in order to both set the transaction's
             // snapshot to be a consistent point and also to find out the LSN that the snapshot
@@ -418,32 +428,32 @@ pub(crate) async fn replication(connection_config:MzConfig, tx:Sender<tremor_val
             // When this happens we'll most likely be snapshotting at a later LSN than the slot
             // which we will take care below by rewinding.
             let temp_slot = uuid::Uuid::new_v4().to_string().replace('-', "");
-            dbg!(&temp_slot);
+            // dbg!(&temp_slot);
             let res = client
                 .simple_query(&format!(
                     r#"CREATE_REPLICATION_SLOT {:?} TEMPORARY LOGICAL "pgoutput" USE_SNAPSHOT"#,
                     temp_slot
                 ))
                 .await?;
-            dbg!(&res);
+            // dbg!(&res);
             let snapshot_lsn = parse_single_row(&res, "consistent_point")?;
             (slot_lsn, snapshot_lsn, Some(temp_slot))
         }
-        Err(e) => {
-            dbg!(e);
+        Err(_e) => {
+            // dbg!(e);
             let res = client
                 .simple_query(&format!(
                     r#"CREATE_REPLICATION_SLOT {:?} LOGICAL "pgoutput" USE_SNAPSHOT"#,
                     slot
                 ))
                 .await?;
-            dbg!(&res);
+            // dbg!(&res);
             let slot_lsn: PgLsn = parse_single_row(&res, "consistent_point")?;
             (slot_lsn, slot_lsn, None)
         }
     };
 
-    dbg!(&slot_lsn, &snapshot_lsn, &temp_slot);
+    // dbg!(&slot_lsn, &snapshot_lsn, &temp_slot);
 
     let mut stream = Box::pin(produce_snapshot(&client, &source_tables).enumerate());
 
@@ -457,11 +467,11 @@ pub(crate) async fn replication(connection_config:MzConfig, tx:Sender<tremor_val
         //     ));
         //     // });
         // }
-        let (output, row) = event?;
+        let (_output, _row) = event?;
 
-        dbg!(output, row, slot_lsn, 1);
+        // dbg!(output, row, slot_lsn, 1);
     }
-    println!("======== END SNAPSHOT ==========");
+    // println!("======== END SNAPSHOT ==========");
 
     if let Some(temp_slot) = temp_slot {
         let _ = client
@@ -491,7 +501,7 @@ pub(crate) async fn replication(connection_config:MzConfig, tx:Sender<tremor_val
         )
             .await;
         tokio::pin!(replication_stream);
-        println!("======== STARTING WHILE LOOP ==========");
+        // println!("======== STARTING WHILE LOOP ==========");
         while let Some(event) = replication_stream.next().await {
             // let event = event?;
             let serialized_event = serde_json::to_string_pretty(&SerializedXLogDataBody(event?)).unwrap();

@@ -13,7 +13,9 @@ impl<'a> Serialize for SerializedTuple<'a> {
         where
             S: Serializer,
     {
-        let data = self.0.tuple_data().iter().map(|d| SerializedTupleData::from_tuple_data(d)).collect::<Vec<_>>();
+        let data = self.0.tuple_data().iter().map(|d| {
+            SerializedTupleData::from_tuple_data(d)
+        }).collect::<Vec<_>>();
         let mut state = serializer.serialize_struct("Tuple", 1)?;
         state.serialize_field("data", &data)?;
         state.end()
@@ -52,6 +54,7 @@ impl<'a, 'b> From<&'b Tuple> for SerializedTuple<'a> where 'b: 'a {
 /// a tuple. This struct is used by SerializedTuple and SerializedOptionTuple
 /// to serialize tuple data into JSON format.
 #[derive(Serialize)]
+#[serde(untagged)]
 enum SerializedTupleData {
     Null,
     UnchangedToast,
@@ -157,7 +160,6 @@ impl fmt::Display for CustomError {
         write!(f, "{}", self.message)
     }
 }
-
 ///SerializedXLogDataBody: A wrapper struct around a XLogDataBody object that provides a
 /// Serialize implementation for it.
 /// This struct is used to serialize logical replication messages into JSON format.
@@ -209,6 +211,7 @@ impl<'a> Serialize for SerializedLogicalReplicationMessage<'a> {
                 state.serialize_field("name", &name)?;
             }
             LogicalReplicationMessage::Relation(ref msg) => {
+                state.serialize_field("type", "RELATION")?;
                 state.serialize_field("rel_id", &msg.rel_id())?;
                 let namespace = msg
                     .namespace()
