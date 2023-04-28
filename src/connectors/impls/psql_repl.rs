@@ -1,4 +1,4 @@
-use std::time::Duration;
+// use std::time::Duration;
 use std::str::FromStr;
 // Copyright 2021, The Tremor Team
 //
@@ -13,10 +13,15 @@ use std::str::FromStr;
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use crate::{
+    channel::{bounded, Receiver, Sender},
+    errors::already_created_error,
+};
 use crate::connectors::prelude::*;
 use tremor_common::time::nanotime;
 
 use mz_postgres_util::{Config as MzConfig};
+use tokio::task;
 use tokio_postgres::config::Config as TokioPgConfig;
 mod postgres_replication;
 
@@ -67,20 +72,25 @@ impl ConnectorBuilder for Builder {
         let password = config.password;
         let pg_config= TokioPgConfig::from_str(&format!("host={} port=5432 user={} password={} dbname={}", origin_uri.host, username, password, database))?;
         let connection_config = MzConfig::new(pg_config, mz_postgres_util::TunnelConfig::Direct)?;
+        let (tx,rx) = bounded(qsize());
 
         Ok(Box::new(PostgresReplication {
             interval: config.interval,
             connection_config,
             origin_uri,
+            rx: Some(rx),
+            tx,
         }))
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) struct PostgresReplication {
     interval: u64,
     connection_config : MzConfig,
     origin_uri: EventOriginUri,
+    rx : Option<Receiver<Value<'static>>>,
+    tx: Sender<Value<'static>>,
 }
 
 #[async_trait::async_trait()]
@@ -90,7 +100,12 @@ impl Connector for PostgresReplication {
         ctx: SourceContext,
         builder: SourceManagerBuilder,
     ) -> Result<Option<SourceAddr>> {
-        let source = PostgresReplicationSource::new(self.interval, self.connection_config.clone(), self.origin_uri.clone());
+        let source = PostgresReplicationSource::new(
+            self.interval,
+            self.connection_config.clone(),
+            self.rx.take().ok_or_else(already_created_error)?,
+            self.tx.clone(),
+            self.origin_uri.clone());
         Ok(Some(builder.spawn(source, ctx)))
     }
 
@@ -103,18 +118,20 @@ struct PostgresReplicationSource {
     interval_ns: u64,
     next: u64,
     connection_config : MzConfig,
+    rx: Receiver<Value<'static>>,
+    tx: Sender<Value<'static>>,
     origin_uri: EventOriginUri,
-    id: u64,
 }
 
 impl PostgresReplicationSource {
-    fn new(interval_ns: u64, connection_config: MzConfig, origin_uri: EventOriginUri) -> Self {
+    fn new(interval_ns: u64, connection_config: MzConfig, rx: Receiver<Value<'static>>, tx: Sender<Value<'static>>, origin_uri: EventOriginUri) -> Self {
         Self {
             interval_ns,
             connection_config,
+            rx,
+            tx,
             next: nanotime() + interval_ns, // dummy placeholer
             origin_uri,
-            id: 0,
         }
     }
 }
@@ -123,34 +140,24 @@ impl PostgresReplicationSource {
 impl Source for PostgresReplicationSource {
     async fn connect(&mut self, _ctx: &SourceContext, _attempt: &Attempt) -> Result<bool> {
         self.next = nanotime() + self.interval_ns;
-        let _client =
-            self.connection_config.connect("postgres_connection").await?;
+        // postgres_replication::replication(self.connection_config.clone(),self.tx.clone()).await?;
+        let conn_config = self.connection_config.clone();
+        let tx = self.tx.clone();
+        task::spawn(async move {postgres_replication::replication(conn_config,tx).await.unwrap();});
         Ok(true)
     }
 
-    async fn pull_data(&mut self, pull_id: &mut u64, _ctx: &SourceContext) -> Result<SourceReply> {
-        let now = nanotime();
-        // we need to wait here before we continue to fulfill the interval conditions
-        if now < self.next {
-            tokio::time::sleep(Duration::from_nanos(self.next - now)).await;
-        }
-        self.next += self.interval_ns;
-        *pull_id = self.id;
-        self.id += 1;
-
-        postgres_replication::replication(self.connection_config.clone()).await?;
-
-        let data = literal!({
-            "connector": "psql-repl",
-            "ingest_ns": now,
-            "id": *pull_id
-        });
-        Ok(SourceReply::Structured {
-            origin_uri: self.origin_uri.clone(),
-            payload: data.into(),
-            stream: DEFAULT_STREAM_ID,
-            port: None,
-        })
+    async fn pull_data(&mut self, _pull_id: &mut u64, _ctx: &SourceContext) -> Result<SourceReply> {
+        self.rx
+            .recv()
+            .await
+            .map(|data| SourceReply::Structured {
+                origin_uri: self.origin_uri.clone(),
+                payload: (data, Value::object()).into(),
+                stream: DEFAULT_STREAM_ID,
+                port: None,
+            })
+            .ok_or_else(|| Error::from("channel closed"))
     }
     fn is_transactional(&self) -> bool {
         false

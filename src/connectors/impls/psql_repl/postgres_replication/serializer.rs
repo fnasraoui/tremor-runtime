@@ -238,11 +238,13 @@ impl<'a> Serialize for SerializedLogicalReplicationMessage<'a> {
                 state.serialize_field("name", &name)?;
             }
             LogicalReplicationMessage::Insert(ref msg) => {
+                state.serialize_field("type", "INSERT")?;
                 state.serialize_field("rel_id", &msg.rel_id())?;
                 let serialized_tuple = SerializedTuple(msg.tuple());
                 state.serialize_field("tuple", &serialized_tuple)?;
             }
             LogicalReplicationMessage::Update(ref msg) => {
+                state.serialize_field("type", "UPDATE")?;
                 state.serialize_field("rel_id", &msg.rel_id())?;
                 if let Some(_old_tuple) = &msg.old_tuple() {
                     let old_tuple = SerializedOptionTuple(*&msg.old_tuple());
@@ -256,6 +258,7 @@ impl<'a> Serialize for SerializedLogicalReplicationMessage<'a> {
                 state.serialize_field("new_tuple", &new_tuple)?;
             }
             LogicalReplicationMessage::Delete(ref msg) => {
+                state.serialize_field("type", "DELETE")?;
                 state.serialize_field("rel_id", &msg.rel_id())?;
                 if let Some(_old_tuple) = &msg.old_tuple() {
                     let old_tuple = SerializedOptionTuple(*&msg.old_tuple());
