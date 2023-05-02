@@ -18,8 +18,6 @@ use crate::{
     errors::already_created_error,
 };
 use crate::connectors::prelude::*;
-use tremor_common::time::nanotime;
-
 use mz_postgres_util::{Config as MzConfig};
 use tokio::task;
 use tokio_postgres::config::Config as TokioPgConfig;
@@ -28,8 +26,6 @@ mod postgres_replication;
 #[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
-    /// Interval in nanoseconds
-    pub interval: u64,
     /// Host name
     pub host: String,
     /// Port number
@@ -63,19 +59,16 @@ impl ConnectorBuilder for Builder {
         let config = Config::new(raw)?;
         let origin_uri = EventOriginUri {
             scheme: "tremor-psql-repl".to_string(),
-            host: config.host,
-            port: Option::from(config.port),
-            path: vec![config.interval.to_string()],
+            host: config.host.clone(),
+            port: Option::from(config.port.clone()),
+            path: vec![config.host.to_string()],
         };
-        let database = config.dbname;
-        let username = config.username;
-        let password = config.password;
-        let pg_config= TokioPgConfig::from_str(&format!("host={} port=5432 user={} password={} dbname={}", origin_uri.host, username, password, database))?;
+
+        let pg_config= TokioPgConfig::from_str(&format!("host={} port={} user={} password={} dbname={}", config.host, config.port, config.username, config.password, config.dbname))?;
         let connection_config = MzConfig::new(pg_config, mz_postgres_util::TunnelConfig::Direct)?;
         let (tx,rx) = bounded(qsize());
 
         Ok(Box::new(PostgresReplication {
-            interval: config.interval,
             connection_config,
             origin_uri,
             rx: Some(rx),
@@ -86,7 +79,6 @@ impl ConnectorBuilder for Builder {
 
 #[derive(Debug)]
 pub(crate) struct PostgresReplication {
-    interval: u64,
     connection_config : MzConfig,
     origin_uri: EventOriginUri,
     rx : Option<Receiver<Value<'static>>>,
@@ -101,7 +93,6 @@ impl Connector for PostgresReplication {
         builder: SourceManagerBuilder,
     ) -> Result<Option<SourceAddr>> {
         let source = PostgresReplicationSource::new(
-            self.interval,
             self.connection_config.clone(),
             self.rx.take().ok_or_else(already_created_error)?,
             self.tx.clone(),
@@ -115,8 +106,6 @@ impl Connector for PostgresReplication {
 }
 
 struct PostgresReplicationSource {
-    interval_ns: u64,
-    next: u64,
     connection_config : MzConfig,
     rx: Receiver<Value<'static>>,
     tx: Sender<Value<'static>>,
@@ -124,13 +113,11 @@ struct PostgresReplicationSource {
 }
 
 impl PostgresReplicationSource {
-    fn new(interval_ns: u64, connection_config: MzConfig, rx: Receiver<Value<'static>>, tx: Sender<Value<'static>>, origin_uri: EventOriginUri) -> Self {
+    fn new(connection_config: MzConfig, rx: Receiver<Value<'static>>, tx: Sender<Value<'static>>, origin_uri: EventOriginUri) -> Self {
         Self {
-            interval_ns,
             connection_config,
             rx,
             tx,
-            next: nanotime() + interval_ns, // dummy placeholer
             origin_uri,
         }
     }
@@ -139,8 +126,6 @@ impl PostgresReplicationSource {
 #[async_trait::async_trait()]
 impl Source for PostgresReplicationSource {
     async fn connect(&mut self, _ctx: &SourceContext, _attempt: &Attempt) -> Result<bool> {
-        self.next = nanotime() + self.interval_ns;
-        // postgres_replication::replication(self.connection_config.clone(),self.tx.clone()).await?;
         let conn_config = self.connection_config.clone();
         let tx = self.tx.clone();
         task::spawn(async move {postgres_replication::replication(conn_config,tx).await.unwrap();});
