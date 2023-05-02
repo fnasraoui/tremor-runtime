@@ -53,8 +53,3 @@ tremor-script/current_counterexample.eqc
 .vscode/configurationCache.log
 .vscode/dryrun.log
 tremor-script-nif/libpath
-.idea/.gitignore
-.idea/modules.xml
-.idea/tremor-runtime.iml
-.idea/vcs.xml
-tree.txt
