@@ -1,4 +1,3 @@
-// use std::time::Duration;
 use std::str::FromStr;
 // Copyright 2021, The Tremor Team
 //
