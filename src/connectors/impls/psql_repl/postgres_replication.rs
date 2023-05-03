@@ -346,7 +346,7 @@ pub(crate) async fn replication(connection_config:MzConfig, publication : &str, 
     let source_id = "source_id";
     let mut _replication_lsn = PgLsn::from(0);
 
-    // println!("======== BEGIN SNA≠PSHOT ==========");
+    // println!("======== BEGIN SNAPSHOT ==========");
 
     // Validate publication tables against the state snapshot
     // dbg!(&publication_tables);
